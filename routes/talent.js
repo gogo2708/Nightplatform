@@ -58,8 +58,23 @@ router.get('/', async (req, res) => {
     
     let filter = {};
     if (category) {
-      filter.categories = category;
-      console.log('FILTRO CATEGORIA APPLICATO:', category);
+      // Gestione gerarchia categorie
+      const Category = require('../models/Category');
+      const selectedCategory = await Category.findById(category);
+      console.log('CATEGORIA SELEZIONATA:', selectedCategory?.name);
+      
+      if (selectedCategory?.name === 'Artisti e Performer') {
+        // Se è "Artisti e Performer", includi anche le sottocategorie come "DJ"
+        const subCategories = await Category.find({ 
+          name: { $in: ['DJ', 'Cantante', 'Musicista', 'Attore', 'Danzatore'] }
+        });
+        const categoryIds = [category, ...subCategories.map(c => c._id)];
+        filter.categories = { $in: categoryIds };
+        console.log('FILTRO MACRO-CATEGORIA - Include sottocategorie:', categoryIds);
+      } else {
+        filter.categories = category;
+        console.log('FILTRO CATEGORIA APPLICATO:', category);
+      }
     }
     if (location) filter.location = { $regex: location, $options: 'i' };
     if (name) filter['user.name'] = { $regex: name, $options: 'i' };
