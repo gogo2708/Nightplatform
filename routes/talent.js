@@ -22,6 +22,34 @@ router.get('/debug/all', async (req, res) => {
   }
 });
 
+// Debug: aggiorna categoria di George
+router.get('/debug/update-george', async (req, res) => {
+  try {
+    const Category = require('../models/Category');
+    
+    // Trova l'ID della categoria 'Artisti e Performer'
+    const artistiCategory = await Category.findOne({ name: 'Artisti e Performer' });
+    console.log('Categoria Artisti e Performer ID:', artistiCategory?._id);
+    
+    if (!artistiCategory) {
+      return res.status(404).json({ message: 'Categoria "Artisti e Performer" non trovata' });
+    }
+    
+    // Aggiorna il profilo di George
+    const result = await Talent.findOneAndUpdate(
+      { 'user.name': 'George' },
+      { categories: [artistiCategory._id] },
+      { new: true }
+    ).populate('user', 'name surname').populate('categories', 'name');
+    
+    console.log('Profilo George aggiornato:', result);
+    res.json({ message: 'Profilo George aggiornato', result });
+  } catch (err) {
+    console.error('Errore aggiornamento George:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
+
 // Ricerca talenti con filtri
 router.get('/', async (req, res) => {
   try {
