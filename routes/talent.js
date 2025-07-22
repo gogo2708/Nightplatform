@@ -54,7 +54,10 @@ router.get('/debug/update-george', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { category, location, name } = req.query;
+    console.log('=== DEBUG FILTRO CATEGORIE ===');
     console.log('QUERY PARAMS:', { category, location, name });
+    console.log('URL COMPLETA:', req.url);
+    console.log('HEADERS:', req.headers);
     
     let filter = {};
     if (category) {
