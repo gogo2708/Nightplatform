@@ -62,7 +62,7 @@ router.get('/debug/update-all-categories', async (req, res) => {
     for (const talent of allTalents) {
       const allCategoryIds = new Set();
       
-      // Aggiungi le categorie esistenti
+      // Aggiungi le categorie esistenti (senza duplicati)
       talent.categories.forEach(cat => allCategoryIds.add(cat._id));
       
       // Espandi con le macro-categorie
@@ -94,6 +94,45 @@ router.get('/debug/update-all-categories', async (req, res) => {
     });
   } catch (err) {
     console.error('Errore aggiornamento categorie:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
+
+// Debug: pulisci duplicati nelle categorie
+router.get('/debug/clean-duplicates', async (req, res) => {
+  try {
+    const allTalents = await Talent.find().populate('categories', 'name');
+    const updatedTalents = [];
+    
+    for (const talent of allTalents) {
+      // Rimuovi duplicati dalle categorie
+      const uniqueCategories = [];
+      const seenIds = new Set();
+      
+      talent.categories.forEach(cat => {
+        if (!seenIds.has(cat._id.toString())) {
+          seenIds.add(cat._id.toString());
+          uniqueCategories.push(cat._id);
+        }
+      });
+      
+      // Aggiorna il talent
+      const updatedTalent = await Talent.findByIdAndUpdate(
+        talent._id,
+        { categories: uniqueCategories },
+        { new: true }
+      ).populate('user', 'name surname').populate('categories', 'name');
+      
+      updatedTalents.push(updatedTalent);
+      console.log(`Talent ${updatedTalent.user?.name} pulito con categorie:`, updatedTalent.categories.map(c => c.name));
+    }
+    
+    res.json({ 
+      message: `${updatedTalents.length} talenti puliti dai duplicati`, 
+      talents: updatedTalents 
+    });
+  } catch (err) {
+    console.error('Errore pulizia duplicati:', err);
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
@@ -205,15 +244,16 @@ router.post('/', auth, async (req, res) => {
       const Category = require('../models/Category');
       const { getMacroCategories } = require('../utils/categoryMapper');
       
-      const allCategoryIds = new Set(categoryIds);
+      const allCategoryIds = new Set();
       
       for (const categoryId of categoryIds) {
         const category = await Category.findById(categoryId);
         if (category) {
+          allCategoryIds.add(category._id);
           const macroCategories = getMacroCategories(category.name);
           for (const macroCategoryName of macroCategories) {
             const macroCategory = await Category.findOne({ name: macroCategoryName });
-            if (macroCategory && macroCategory._id.toString() !== categoryId.toString()) {
+            if (macroCategory) {
               allCategoryIds.add(macroCategory._id);
             }
           }
