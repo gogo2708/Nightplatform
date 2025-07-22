@@ -50,6 +50,54 @@ router.get('/debug/update-george', async (req, res) => {
   }
 });
 
+// Debug: aggiorna tutti i talenti con macro-categorie
+router.get('/debug/update-all-categories', async (req, res) => {
+  try {
+    const Category = require('../models/Category');
+    const { getMacroCategories } = require('../utils/categoryMapper');
+    
+    const allTalents = await Talent.find().populate('categories', 'name');
+    const updatedTalents = [];
+    
+    for (const talent of allTalents) {
+      const allCategoryIds = new Set();
+      
+      // Aggiungi le categorie esistenti
+      talent.categories.forEach(cat => allCategoryIds.add(cat._id));
+      
+      // Espandi con le macro-categorie
+      for (const category of talent.categories) {
+        const macroCategories = getMacroCategories(category.name);
+        for (const macroCategoryName of macroCategories) {
+          const macroCategory = await Category.findOne({ name: macroCategoryName });
+          if (macroCategory) {
+            allCategoryIds.add(macroCategory._id);
+          }
+        }
+      }
+      
+      // Aggiorna il talent
+      const expandedCategories = Array.from(allCategoryIds);
+      const updatedTalent = await Talent.findByIdAndUpdate(
+        talent._id,
+        { categories: expandedCategories },
+        { new: true }
+      ).populate('user', 'name surname').populate('categories', 'name');
+      
+      updatedTalents.push(updatedTalent);
+      console.log(`Talent ${updatedTalent.user?.name} aggiornato con categorie:`, updatedTalent.categories.map(c => c.name));
+    }
+    
+    res.json({ 
+      message: `${updatedTalents.length} talenti aggiornati con macro-categorie`, 
+      talents: updatedTalents 
+    });
+  } catch (err) {
+    console.error('Errore aggiornamento categorie:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
+
 // Ricerca talenti con filtri
 router.get('/', async (req, res) => {
   try {
@@ -151,9 +199,34 @@ router.post('/', auth, async (req, res) => {
   try {
     const { categories, bio, priceRange, location, gallery } = req.body;
     let talent = await Talent.findOne({ user: req.user.userId });
+    
+    // Funzione per espandere le categorie con le macro-categorie
+    const expandCategories = async (categoryIds) => {
+      const Category = require('../models/Category');
+      const { getMacroCategories } = require('../utils/categoryMapper');
+      
+      const allCategoryIds = new Set(categoryIds);
+      
+      for (const categoryId of categoryIds) {
+        const category = await Category.findById(categoryId);
+        if (category) {
+          const macroCategories = getMacroCategories(category.name);
+          for (const macroCategoryName of macroCategories) {
+            const macroCategory = await Category.findOne({ name: macroCategoryName });
+            if (macroCategory && macroCategory._id.toString() !== categoryId.toString()) {
+              allCategoryIds.add(macroCategory._id);
+            }
+          }
+        }
+      }
+      
+      return Array.from(allCategoryIds);
+    };
+    
     if (talent) {
       // Aggiorna
-      talent.categories = categories || talent.categories;
+      const expandedCategories = categories ? await expandCategories(categories) : talent.categories;
+      talent.categories = expandedCategories;
       talent.bio = bio || talent.bio;
       talent.priceRange = priceRange || talent.priceRange;
       talent.location = location || talent.location;
@@ -162,9 +235,10 @@ router.post('/', auth, async (req, res) => {
       return res.json(talent);
     } else {
       // Crea nuovo profilo talent
+      const expandedCategories = categories ? await expandCategories(categories) : [];
       talent = new Talent({
         user: req.user.userId,
-        categories,
+        categories: expandedCategories,
         bio,
         priceRange,
         location,
