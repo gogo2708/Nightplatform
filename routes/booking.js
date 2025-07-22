@@ -34,6 +34,41 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Recupera le richieste inviate dall'utente (come cliente)
+router.get('/sent', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const bookings = await Booking.find({ user: userId })
+      .populate('talent', 'name category location rating price')
+      .populate('user', 'name surname email')
+      .sort({ createdAt: -1 });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
+
+// Recupera le richieste ricevute dal talento
+router.get('/received', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    // Prima trova il talent associato all'utente
+    const Talent = require('../models/Talent');
+    const talent = await Talent.findOne({ user: userId });
+    if (!talent) {
+      return res.status(404).json({ message: 'Talent non trovato per questo utente' });
+    }
+    
+    const bookings = await Booking.find({ talent: talent._id })
+      .populate('talent', 'name category location rating price')
+      .populate('user', 'name surname email')
+      .sort({ createdAt: -1 });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
+
 // Recupera dettaglio prenotazione
 router.get('/:id', auth, async (req, res) => {
   try {

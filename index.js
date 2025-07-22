@@ -36,6 +36,9 @@ app.use('/api/talents', talentRoutes);
 const postRoutes = require('./routes/post');
 app.use('/api/post', postRoutes);
 
+const bookingRoutes = require('./routes/booking');
+app.use('/api/bookings', bookingRoutes);
+
 const chatRoutes = require('./routes/chat');
 app.use('/api/chat', chatRoutes);
 
