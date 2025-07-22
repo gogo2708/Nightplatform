@@ -26,8 +26,13 @@ router.get('/debug/all', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { category, location, name } = req.query;
+    console.log('QUERY PARAMS:', { category, location, name });
+    
     let filter = {};
-    if (category) filter.categories = category;
+    if (category) {
+      filter.categories = category;
+      console.log('FILTRO CATEGORIA APPLICATO:', category);
+    }
     if (location) filter.location = { $regex: location, $options: 'i' };
     if (name) filter['user.name'] = { $regex: name, $options: 'i' };
     
