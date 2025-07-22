@@ -31,6 +31,20 @@ exports.register = async (req, res) => {
     });
     await user.save();
     
+    // Se è un talento, crea automaticamente il profilo talent
+    if (userType === 'talent') {
+      const Talent = require('../models/Talent');
+      const talent = new Talent({
+        user: user._id,
+        categories: [],
+        bio: '',
+        priceRange: { min: 0 },
+        location: '',
+        gallery: []
+      });
+      await talent.save();
+    }
+    
     // Genera token e restituisci dati utente come nel login
     const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ 

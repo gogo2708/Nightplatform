@@ -19,14 +19,14 @@ router.get('/', async (req, res) => {
     // Mappa i dati per il frontend
     const mapped = talents.map(t => ({
       id: t._id,
-      name: t.user?.name,
+      name: t.user?.name || 'Nome non specificato',
       avatar: t.user?.avatar,
       category: t.categories[0]?.name || (t.categories.length > 0 ? t.categories[0] : ''),
       categories: Array.isArray(t.categories) ? t.categories.map(c => typeof c === 'object' && c !== null ? c.name : c) : [],
-      rating: t.rating,
-      price: t.priceRange?.min,
+      rating: t.rating || 0,
+      price: t.priceRange?.min || 0,
       image: t.gallery?.[0] || t.user?.avatar,
-      location: t.location,
+      location: t.location || 'Località non specificata',
       bio: t.bio,
       description: t.bio,
     }));
@@ -80,6 +80,32 @@ router.post('/', auth, async (req, res) => {
     }
   } catch (err) {
     console.error('Errore salvataggio profilo talent:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
+
+// Aggiorna profilo talent esistente (protetto)
+router.put('/profile', auth, async (req, res) => {
+  console.log('PUT /api/talents/profile', { body: req.body, user: req.user });
+  try {
+    const { categories, bio, priceRange, location, gallery } = req.body;
+    let talent = await Talent.findOne({ user: req.user.userId });
+    
+    if (!talent) {
+      return res.status(404).json({ message: 'Profilo talent non trovato' });
+    }
+    
+    // Aggiorna i campi forniti
+    if (categories) talent.categories = categories;
+    if (bio) talent.bio = bio;
+    if (priceRange) talent.priceRange = priceRange;
+    if (location) talent.location = location;
+    if (gallery) talent.gallery = gallery;
+    
+    await talent.save();
+    return res.json(talent);
+  } catch (err) {
+    console.error('Errore aggiornamento profilo talent:', err);
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
