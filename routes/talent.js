@@ -32,11 +32,14 @@ router.get('/', async (req, res) => {
     if (name) filter['user.name'] = { $regex: name, $options: 'i' };
     
     // Filtra solo talenti con profili completi (hanno bio, location e prezzo)
+    // Rimuoviamo temporaneamente il filtro per debug
+    /*
     filter.$and = [
       { bio: { $exists: true, $ne: null, $ne: '' } },
       { location: { $exists: true, $ne: null, $ne: '' } },
       { 'priceRange.min': { $exists: true, $gt: 0 } }
     ];
+    */
     
     const talents = await Talent.find(filter)
       .populate('user', 'name surname avatar')
@@ -45,6 +48,19 @@ router.get('/', async (req, res) => {
     
     console.log('TALENTI TROVATI:', talents.length);
     console.log('FILTRO APPLICATO:', JSON.stringify(filter, null, 2));
+    
+    // Debug dettagliato di ogni talento
+    talents.forEach((t, index) => {
+      console.log(`TALENT ${index + 1}:`, {
+        id: t._id,
+        userName: t.user?.name,
+        userSurname: t.user?.surname,
+        bio: t.bio,
+        location: t.location,
+        priceRange: t.priceRange,
+        categories: t.categories
+      });
+    });
     
     // Mappa i dati per il frontend
     const mapped = talents.map(t => ({
@@ -60,7 +76,7 @@ router.get('/', async (req, res) => {
       bio: t.bio,
       description: t.bio,
     }));
-    console.log('RESPONSE TALENTS:', mapped); // <-- LOG DI DEBUG
+    console.log('RESPONSE TALENTS MAPPED:', mapped); // <-- LOG DI DEBUG
     res.json(mapped);
   } catch (err) {
     res.status(500).json({ message: 'Errore server', error: err.message });
