@@ -4,6 +4,24 @@ const Talent = require('../models/Talent');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 
+// Debug: mostra tutti i talenti (anche incompleti)
+router.get('/debug/all', async (req, res) => {
+  try {
+    const allTalents = await Talent.find()
+      .populate('user', 'name surname email')
+      .lean();
+    
+    console.log('TUTTI I TALENTI NEL DATABASE:', allTalents.length);
+    allTalents.forEach(t => {
+      console.log('- User:', t.user?.name, 'Bio:', !!t.bio, 'Location:', !!t.location, 'Price:', t.priceRange?.min);
+    });
+    
+    res.json(allTalents);
+  } catch (err) {
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
+
 // Ricerca talenti con filtri
 router.get('/', async (req, res) => {
   try {
@@ -12,10 +30,22 @@ router.get('/', async (req, res) => {
     if (category) filter.categories = category;
     if (location) filter.location = { $regex: location, $options: 'i' };
     if (name) filter['user.name'] = { $regex: name, $options: 'i' };
+    
+    // Filtra solo talenti con profili completi (hanno bio, location e prezzo)
+    filter.$and = [
+      { bio: { $exists: true, $ne: null, $ne: '' } },
+      { location: { $exists: true, $ne: null, $ne: '' } },
+      { 'priceRange.min': { $exists: true, $gt: 0 } }
+    ];
+    
     const talents = await Talent.find(filter)
       .populate('user', 'name surname avatar')
       .populate('categories', 'name')
       .lean(); // <-- AGGIUNTO .lean()
+    
+    console.log('TALENTI TROVATI:', talents.length);
+    console.log('FILTRO APPLICATO:', JSON.stringify(filter, null, 2));
+    
     // Mappa i dati per il frontend
     const mapped = talents.map(t => ({
       id: t._id,
