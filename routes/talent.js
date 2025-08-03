@@ -236,7 +236,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', auth, async (req, res) => {
   console.log('POST /api/talents', { body: req.body, user: req.user });
   try {
-    const { categories, bio, priceRange, location, gallery } = req.body;
+    const { categories, bio, experience, skills, pastEvents, priceRange, location, gallery, socialMedia } = req.body;
     let talent = await Talent.findOne({ user: req.user.userId });
     
     // Funzione per espandere le categorie con le macro-categorie
@@ -268,9 +268,13 @@ router.post('/', auth, async (req, res) => {
       const expandedCategories = categories ? await expandCategories(categories) : talent.categories;
       talent.categories = expandedCategories;
       talent.bio = bio || talent.bio;
+      talent.experience = experience || talent.experience;
+      talent.skills = skills || talent.skills;
+      talent.pastEvents = pastEvents || talent.pastEvents;
       talent.priceRange = priceRange || talent.priceRange;
       talent.location = location || talent.location;
       talent.gallery = gallery || talent.gallery;
+      talent.socialMedia = socialMedia || talent.socialMedia;
       await talent.save();
       return res.json(talent);
     } else {
@@ -280,9 +284,13 @@ router.post('/', auth, async (req, res) => {
         user: req.user.userId,
         categories: expandedCategories,
         bio,
+        experience,
+        skills,
+        pastEvents,
         priceRange,
         location,
-        gallery
+        gallery,
+        socialMedia
       });
       await talent.save();
       // Aggiorna ruolo utente
@@ -299,7 +307,7 @@ router.post('/', auth, async (req, res) => {
 router.put('/profile', auth, async (req, res) => {
   console.log('PUT /api/talents/profile', { body: req.body, user: req.user });
   try {
-    const { categories, bio, priceRange, location, gallery } = req.body;
+    const { categories, bio, experience, skills, pastEvents, priceRange, location, gallery, socialMedia } = req.body;
     let talent = await Talent.findOne({ user: req.user.userId });
     
     if (!talent) {
@@ -309,9 +317,13 @@ router.put('/profile', auth, async (req, res) => {
     // Aggiorna i campi forniti
     if (categories) talent.categories = categories;
     if (bio) talent.bio = bio;
+    if (experience !== undefined) talent.experience = experience;
+    if (skills !== undefined) talent.skills = skills;
+    if (pastEvents !== undefined) talent.pastEvents = pastEvents;
     if (priceRange) talent.priceRange = priceRange;
     if (location) talent.location = location;
     if (gallery) talent.gallery = gallery;
+    if (socialMedia) talent.socialMedia = socialMedia;
     
     await talent.save();
     return res.json(talent);
