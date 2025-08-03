@@ -8,6 +8,7 @@ const categories = [
   'DJ',
   'Animatori',
   'Ballerine',
+  'Ballerina',
   'Performer',
   'Artisti',
   'Musicisti',

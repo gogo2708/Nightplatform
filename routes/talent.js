@@ -170,6 +170,14 @@ router.get('/', async (req, res) => {
         const categoryIds = [category, ...subCategories.map(c => c._id)];
         filter.categories = { $in: categoryIds };
         console.log('FILTRO MACRO-CATEGORIA - Include sottocategorie:', categoryIds);
+      } else if (selectedCategory?.name === 'Ballo e Spettacolo') {
+        // Se è "Ballo e Spettacolo", includi anche le sottocategorie come "Ballerina"
+        const subCategories = await Category.find({ 
+          name: { $in: ['Ballerino', 'Ballerina', 'Coreografo', 'Acrobata'] }
+        });
+        const categoryIds = [category, ...subCategories.map(c => c._id)];
+        filter.categories = { $in: categoryIds };
+        console.log('FILTRO MACRO-CATEGORIA - Include sottocategorie:', categoryIds);
       } else {
         filter.categories = category;
         console.log('FILTRO CATEGORIA APPLICATO:', category);

@@ -11,6 +11,7 @@ const categoryMapping = {
   
   // Ballo e Spettacolo
   'Ballerino': 'Ballo e Spettacolo',
+  'Ballerina': 'Ballo e Spettacolo',
   'Coreografo': 'Ballo e Spettacolo',
   'Acrobata': 'Ballo e Spettacolo',
   
