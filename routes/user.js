@@ -8,7 +8,12 @@ router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
     if (!user) return res.status(404).json({ message: 'Utente non trovato' });
-    res.json(user);
+    
+    // Mappa role a userType per essere consistente con il resto dell'API
+    const userResponse = user.toObject();
+    userResponse.userType = user.role;
+    
+    res.json(userResponse);
   } catch (err) {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
@@ -21,7 +26,12 @@ router.put('/me', auth, async (req, res) => {
     if (updates.password) delete updates.password; // Non permettere update password qui
     const user = await User.findByIdAndUpdate(req.user.userId, updates, { new: true }).select('-password');
     if (!user) return res.status(404).json({ message: 'Utente non trovato' });
-    res.json(user);
+    
+    // Mappa role a userType per essere consistente con il resto dell'API
+    const userResponse = user.toObject();
+    userResponse.userType = user.role;
+    
+    res.json(userResponse);
   } catch (err) {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
