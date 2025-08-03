@@ -4,6 +4,15 @@ const Talent = require('../models/Talent');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 
+// Test endpoint per verificare che il backend sia aggiornato
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Backend funzionante', 
+    timestamp: new Date().toISOString(),
+    modelFields: ['experience', 'skills', 'pastEvents', 'socialMedia']
+  });
+});
+
 // Debug: mostra tutti i talenti (anche incompleti)
 router.get('/debug/all', async (req, res) => {
   try {
